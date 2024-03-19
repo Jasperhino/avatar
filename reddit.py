@@ -10,40 +10,64 @@ reddit = praw.Reddit(
 
 posts = []
 all_comments = []  # Renamed for clarity
-# keyword = "awe"
-keyword = "empathy OR empathize OR empathetic OR empath"
-# keyword = "identif OR indentification OR anthropomorph OR anthropomorphism OR behavior OR behaviour change"
-avatar_subreddit = reddit.subreddit("Avatar")
-for post in avatar_subreddit.search(keyword, sort="top", time_filter="all"):
-    posts.append(
-        [
-            post.title,
-            post.score,
-            post.id,
-            post.subreddit,
-            post.url,
-            post.num_comments,
-            post.selftext,
-            post.created,
-        ]
-    )
+# keywords_ = ["awe"]
+keywords = ["empathy", "empathize", "empathetic", "empath"]
 
-    # Load all comments
-    post.comments.replace_more(
-        limit=None
-    )  # Set limit=None to try to replace all MoreComments
-    for comment in post.comments.list():
-        all_comments.append(
+# keywords = [
+#     "identif",
+#     "indentification",
+#     "anthropomorph",
+#     "anthropomorphism",
+#     "behavior",
+#     "behaviour change",
+#     "humanlike",
+#     "humanization",
+#     "humanize",
+# ]
+avatar_subreddit = reddit.subreddit("Avatar")
+for keyword in keywords:
+    for post in avatar_subreddit.search(
+        keyword,
+        syntax="lucene",
+        sort="top",
+        time_filter="all",
+    ):
+        if post.selftext == "[deleted]" or post.id in [p[2] for p in posts]:
+            continue
+
+        posts.append(
             [
-                comment.body,
-                comment.score,
-                comment.id,
-                comment.subreddit,
-                comment.link_id,
-                comment.parent_id,
-                comment.created,
+                post.title,
+                post.score,
+                post.id,
+                post.subreddit,
+                post.url,
+                post.num_comments,
+                post.selftext,
+                post.created,
             ]
         )
+
+        # Load all comments
+        post.comments.replace_more(
+            limit=None
+        )  # Set limit=None to try to replace all MoreComments
+        for comment in post.comments.list():
+            if comment.body == "[deleted]" or comment.id in [
+                c[2] for c in all_comments
+            ]:
+                continue
+            all_comments.append(
+                [
+                    comment.body,
+                    comment.score,
+                    comment.id,
+                    comment.subreddit,
+                    comment.link_id,
+                    comment.parent_id,
+                    comment.created,
+                ]
+            )
 
 posts_df = pd.DataFrame(
     posts,
@@ -78,3 +102,5 @@ posts_df.to_csv(f"data_new/posts_empathy.csv", index=False)
 comments_df.to_csv(f"data_new/comments_empathy.csv", index=False)
 print(f"Number of posts: {len(posts_df)}")
 print(f"Number of comments: {len(comments_df)}")
+
+# %%
